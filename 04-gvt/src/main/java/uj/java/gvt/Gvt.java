@@ -38,7 +38,6 @@ public class Gvt {
         }
     }
 
-
     static void init(){
         isInitiatedError();
 
@@ -79,27 +78,7 @@ public class Gvt {
                 if(ver.addedFiles().contains(fileDescription.filePath())){
                     System.out.println("File " + fileDescription.filePath() + " already added.");
                 } else {
-                    ArrayList<String> tempListAdded = new ArrayList<>(ver.addedFiles());
-                    ArrayList<String> tempListCommitted = new ArrayList<>(ver.committedFiles());
-                    String fileName = new File(fileDescription.filePath()).getName();
-
-                    tempListAdded.add(fileDescription.filePath());
-
-                    createNewVersionDirectory(fileDescription);
-
-                    String newMessage = "Added file: " + fileDescription.filePath();
-
-                    if(fileDescription.message() != null){
-                        newMessage += "\n" + fileDescription.message();
-                    }
-
-                    GvtVersion tmp = new GvtVersion(highestVersion, newMessage, tempListAdded, tempListCommitted);
-                    gvtVersions.add(tmp);
-
-                    System.out.println("File " + fileName + " added successfully.");
-
-                    writeVersions();
-                    writeLastVersion();
+                    updateLists("add", ver, fileDescription);
                 }
                 return;
 
@@ -169,8 +148,6 @@ public class Gvt {
         return input.split("\\n")[0];
     }
 
-    //static void updateLists(String nameOfMethod, String newMessage, )
-
     static void commit(String[] input){
         specifyFileError("commit", input);
         isNotInitiatedError();
@@ -182,30 +159,10 @@ public class Gvt {
 
         fileDoesNotExistError(fileDescription.filePath());
 
-
         for (GvtVersion ver: gvtVersions) {
             if (ver.number() == lastVersion ){
                 if (ver.addedFiles().contains(fileDescription.filePath()) && !ver.committedFiles().contains(fileDescription.filePath())){
-                    ArrayList<String> tempListAdded = new ArrayList<>(ver.addedFiles());
-                    ArrayList<String> tempListCommitted = new ArrayList<>(ver.committedFiles());
-
-                    tempListCommitted.add(fileDescription.filePath());
-                    String fileName = new File(fileDescription.filePath()).getName();
-                    createNewVersionDirectory(fileDescription);
-
-                    String newMessage = "Committed file: " + fileDescription.filePath();
-
-                    if(fileDescription.message() != null){
-                        newMessage += "\n" + fileDescription.message();
-                    }
-
-                    GvtVersion tmp = new GvtVersion(lastVersion, newMessage, tempListAdded, tempListCommitted);
-                    gvtVersions.add(tmp);
-
-                    System.out.println("File " + fileName + " committed successfully.");
-
-                    writeLastVersion();
-                    writeVersions();
+                    updateLists("commit", ver, fileDescription);
                 } else {
                     System.out.println("File " + fileDescription.filePath() + " is not added to gvt.");
                 }
@@ -228,47 +185,59 @@ public class Gvt {
             if(ver.number() == lastVersion){
                 String fileName = new File(fileDescription.filePath()).getName();
                 if(ver.addedFiles().contains(fileDescription.filePath())){
+                    updateLists("detach", ver, fileDescription);
 
-
-                    ArrayList<String> tmpAddedList = new ArrayList<>(ver.addedFiles());
-                    tmpAddedList.remove(fileDescription.filePath());
-
-                    ArrayList<String> tmpCommittedList = new ArrayList<>(ver.committedFiles());
-                    tmpCommittedList.remove(fileDescription.filePath());
-
-                    Path previousDirectory = versionsDirectory.resolve(String.valueOf(lastVersion));
-
-                    highestVersion += 1;
-                    lastVersion = highestVersion;
-
-                    Path newVersionDirectory = versionsDirectory.resolve(String.valueOf(lastVersion));
-
-                    createNewDirectory(newVersionDirectory);
-
-                    copyAllFilesFromDirectory(previousDirectory, newVersionDirectory);
-
-                    File myObj = new File(newVersionDirectory + "/" + fileName);
-                    if(myObj.delete()){
-                        System.out.println("File " + fileDescription.filePath() + " detached successfully.");
-                    }
-
-                    String newMessage = "Detached file: " + fileName;
-                    if(fileDescription.message() != null){
-                        newMessage += "\n" + fileDescription.message();
-                    }
-
-                    GvtVersion tmp = new GvtVersion(lastVersion, newMessage, tmpAddedList, tmpCommittedList);
-                    gvtVersions.add(tmp);
-
-
-                    writeVersions();
-                    writeLastVersion();
                 } else {
                     System.out.println("File "+ fileName +" is not added to gvt.");
                 }
                 return;
             }
         }
+    }
+
+    static void updateLists(String nameOfMethod, GvtVersion ver, FileDescription fileDescription){
+        ArrayList<String> tempListAdded = new ArrayList<>(ver.addedFiles());
+        ArrayList<String> tempListCommitted = new ArrayList<>(ver.committedFiles());
+
+        String fileName = new File(fileDescription.filePath()).getName();
+
+        createNewVersionDirectory(fileDescription);
+        String newMessage = "";
+
+        switch (nameOfMethod) {
+            case "commit" -> {
+                tempListCommitted.add(fileDescription.filePath());
+                newMessage = "Committed file: " + fileDescription.filePath();
+                System.out.println("File " + fileName + " committed successfully.");
+            }
+            case "add" -> {
+                tempListAdded.add(fileDescription.filePath());
+                newMessage = "Added file: " + fileDescription.filePath();
+                System.out.println("File " + fileName + " added successfully.");
+            }
+            case "detach" -> {
+                tempListAdded.remove(fileDescription.filePath());
+                tempListCommitted.remove(fileDescription.filePath());
+                Path newVersionDirectory = versionsDirectory.resolve(String.valueOf(lastVersion));
+                File myObj = new File(newVersionDirectory + "/" + fileName);
+                if (myObj.delete()) {
+                    System.out.println("File " + fileDescription.filePath() + " detached successfully.");
+                }
+                newMessage = "Detached file: " + fileName;
+            }
+        }
+
+        if(fileDescription.message() != null){
+            newMessage += "\n" + fileDescription.message();
+        }
+
+        GvtVersion tmp = new GvtVersion(lastVersion, newMessage, tempListAdded, tempListCommitted);
+        gvtVersions.add(tmp);
+
+        writeVersions();
+        writeLastVersion();
+
+
     }
 
     static void checkout(String[] input){

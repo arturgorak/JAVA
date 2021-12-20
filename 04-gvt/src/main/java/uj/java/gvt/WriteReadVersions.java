@@ -9,7 +9,6 @@ import static uj.java.gvt.Gvt.*;
 
 public class WriteReadVersions {
     static void writeLastVersion(){
-
         File f = new File(lastVersionPath);
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))){
             bw.write(Long.toString(lastVersion));
@@ -97,8 +96,7 @@ public class WriteReadVersions {
     private static int countLines(String input){
         Matcher m = Pattern.compile("\r\n|\r|\n").matcher(input);
         int lines = 1;
-        while (m.find())
-        {
+        while (m.find()) {
             lines ++;
         }
         return lines;
